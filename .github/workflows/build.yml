@@ -1,0 +1,43 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Extract and Build
+      run: |
+        # فك الضغط عن ملف الـ ZIP الموجود في المستودع
+        unzip -q *.zip -d extracted
+        
+        # الانتقال إلى المجلد الذي يحتوي على ملف البناء gradlew
+        PROJECT_DIR=$(dirname $(find extracted -name gradlew | head -n 1))
+        cd $PROJECT_DIR
+        
+        chmod +x gradlew
+        ./gradlew assembleDebug
+        
+        # نسخ الـ APK الناتج إلى المجلد الرئيسي
+        cd $GITHUB_WORKSPACE
+        mkdir -p output_apk
+        find extracted -name "*.apk" -exec cp {} output_apk/ \;
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MotorcycleControl-APK
+        path: output_apk/*.apk
+
